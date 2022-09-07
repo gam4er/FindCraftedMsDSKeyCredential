@@ -1,7 +1,7 @@
-﻿using System;
+﻿using DSInternals.Common.Properties;
+using System;
 using System.IO;
 using System.Security;
-using DSInternals.Common.Properties;
 
 namespace DSInternals.Common
 {
@@ -9,7 +9,7 @@ namespace DSInternals.Common
     {
         public static void AssertEquals(string expectedValue, string actualValue, string paramName)
         {
-            if(!String.Equals(expectedValue, actualValue, StringComparison.InvariantCulture))
+            if (!String.Equals(expectedValue, actualValue, StringComparison.InvariantCulture))
             {
                 string message = String.Format(Resources.UnexpectedValueMessage, actualValue, expectedValue);
                 throw new ArgumentException(message, paramName);
@@ -27,7 +27,7 @@ namespace DSInternals.Common
 
         public static void AssertNotNull(object value, string paramName)
         {
-            if(value == null)
+            if (value == null)
             {
                 throw new ArgumentNullException(paramName);
             }
@@ -43,7 +43,7 @@ namespace DSInternals.Common
 
         public static void AssertNotNullOrWhiteSpace(string value, string paramName)
         {
-            if(string.IsNullOrWhiteSpace(value))
+            if (string.IsNullOrWhiteSpace(value))
             {
                 throw new ArgumentNullException(paramName);
             }
@@ -52,7 +52,7 @@ namespace DSInternals.Common
         public static void AssertLength(string value, int length, string paramName)
         {
             AssertNotNull(value, paramName);
-            if(value.Length != length)
+            if (value.Length != length)
             {
                 throw new ArgumentOutOfRangeException(paramName, value.Length, Resources.UnexpectedLengthMessage);
             }
@@ -99,7 +99,7 @@ namespace DSInternals.Common
         public static void AssertFileExists(string filePath)
         {
             bool exists = File.Exists(filePath);
-            if(!exists)
+            if (!exists)
             {
                 throw new FileNotFoundException(Resources.PathNotFoundMessage, filePath);
             }

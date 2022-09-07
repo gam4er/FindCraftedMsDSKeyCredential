@@ -1,11 +1,11 @@
 ﻿namespace DSInternals.Common
 {
+    using DSInternals.Common.Properties;
     using System;
     using System.IO;
     using System.Security;
     using System.Security.Principal;
     using System.Text;
-    using DSInternals.Common.Properties;
 
     public static class ByteArrayExtensions
     {
@@ -29,8 +29,8 @@
                 exception.Data.Add("Value", hex);
                 throw exception;
             }
-            
-            if(startIndex < 0 || startIndex >= hex.Length )
+
+            if (startIndex < 0 || startIndex >= hex.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex));
             }
@@ -93,7 +93,7 @@
             string hexDigits = caps ? HexDigitsUpper : HexDigitsLower;
 
             StringBuilder hex = new StringBuilder(bytes.Length * 2);
-            foreach(byte currentByte in bytes)
+            foreach (byte currentByte in bytes)
             {
                 hex.Append(hexDigits[(int)(currentByte >> 4)]);
                 hex.Append(hexDigits[(int)(currentByte & 0xF)]);
@@ -154,7 +154,7 @@
 
         public static uint ToUInt32BigEndian(this byte[] bytes, int startIndex = 0)
         {
-            if(BitConverter.IsLittleEndian)
+            if (BitConverter.IsLittleEndian)
             {
                 Array.Reverse(bytes);
             }
@@ -187,7 +187,7 @@
 
         public static SecurityIdentifier ToSecurityIdentifier(this byte[] binarySid, bool bigEndianRid = false)
         {
-            if(binarySid == null)
+            if (binarySid == null)
             {
                 return null;
             }
@@ -196,7 +196,7 @@
             {
                 // Clone the binary SID so we do not perform byte spapping on the original value.
                 byte[] binarySidCopy = (byte[])binarySid.Clone();
-                int lastByteIndex = binarySidCopy.Length -1;
+                int lastByteIndex = binarySidCopy.Length - 1;
                 // Convert RID from big endian to little endian (Reverse the order of the last 4 bytes)
                 binarySidCopy.SwapBytes(lastByteIndex - 3, lastByteIndex);
                 binarySidCopy.SwapBytes(lastByteIndex - 2, lastByteIndex - 1);
@@ -224,7 +224,7 @@
         public static byte[] ReadToEnd(this MemoryStream stream)
         {
             long remainingBytes = stream.Length - stream.Position;
-            if(remainingBytes > int.MaxValue)
+            if (remainingBytes > int.MaxValue)
             {
                 throw new ArgumentOutOfRangeException("stream");
             }

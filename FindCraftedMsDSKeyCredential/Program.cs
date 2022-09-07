@@ -1,7 +1,9 @@
 ﻿using DSInternals.Common.Data;
+using Spectre.Console;
 using System;
 using System.DirectoryServices;
 using System.DirectoryServices.ActiveDirectory;
+using System.IO;
 using System.Reflection;
 using System.Security.AccessControl;
 using System.Security.Principal;
@@ -31,6 +33,50 @@ namespace FindCraftedMsDSKeyCredential
             );
         }
 
+        private static void WriteLogMessage(string message)
+        {
+            AnsiConsole.MarkupLine($"[bold grey]LOG:[/] {message}");
+        }
+
+        private static void WriteErrorMessage(string message)
+        {
+            AnsiConsole.MarkupLine($"[bold red]ERROR:[/] {message}");
+        }
+
+        private static void WriteWarningMessage(string message)
+        {
+            AnsiConsole.MarkupLine($"[bold gold1]Warning:[/] {message}");
+        }
+
+        private static void WriteFindMessage(string message)
+        {
+            AnsiConsole.MarkupLine($"[bold yellow]{message} [/]");
+        }
+
+        private static Table CreateTable(string sid, DirectoryEntry DE, KeyCredential kc)
+        {
+            /*
+            WriteFindMessage(String.Format("Distinguished Name: {0}", DE.Properties["distinguishedName"][0].ToString()));
+            WriteFindMessage(String.Format("DeviceID: {0} | Creation Time: {1}", kc.DeviceId, kc.CreationTime));
+            WriteFindMessage(String.Format("Length of key: {0} | Flags: {1}", kc.RawKeyMaterial.Length, kc.CustomKeyInfo.Flags));
+            */
+
+            return new Table()
+                .Border(TableBorder.HeavyEdge)
+                .BorderColor(Color.BlueViolet)
+                .Title(String.Format("[magenta2]Listing msDS-KeyCredentialLink entry for {0}[/]", sid))
+                //.Caption("TABLE [yellow]CAPTION[/]")
+                .AddColumn("Key")
+                .AddColumn("Value")
+                .AddRow(new Text("Distinguished Name").LeftAligned(), new Markup(String.Format("[green]{0}[/]", DE.Properties["distinguishedName"][0].ToString())))
+                .AddRow(new Text("DeviceID").LeftAligned(), new Markup(String.Format("[green]{0}[/]", kc.DeviceId)))
+                .AddRow(new Text("Creation Time").LeftAligned(), new Markup(String.Format("[green]{0}[/]", kc.CreationTime)))
+                .AddRow(new Text("Length of key").LeftAligned(), new Markup(String.Format("[green]{0}[/]", kc.RawKeyMaterial.Length)))
+                .AddRow(new Text("Owner (from binary part)").LeftAligned(), new Markup(String.Format("[green]{0}[/]", kc.Owner)))
+                .AddRow(new Text("Flags").LeftAligned(), new Markup(String.Format("[green]{0}[/]", kc.CustomKeyInfo.Flags)));
+
+        }
+
         private static int DoesIHaveReadAcces(DirectoryEntry DE)
         {
             try
@@ -58,14 +104,17 @@ namespace FindCraftedMsDSKeyCredential
                         {
                             if (rule.AccessControlType == AccessControlType.Allow)
                             {
-                                Console.WriteLine("Current user is in role of {0}, that has read access", ntAccount.Value);
+                                WriteWarningMessage(String.Format("Current user {0} is in role of {1}", System.Security.Principal.WindowsIdentity.GetCurrent().Name, ntAccount.Value));
+                                WriteWarningMessage(String.Format("That [bold green]has ALLOWED[/] read access to {0}", DE.Name));
+                                //Console.WriteLine("Current user is in role of {0}, that has read access", ntAccount.Value);
                                 //continue;
                                 //break;
                                 return 1;
                             }
                             else
                             {
-                                Console.WriteLine("Current user is in role of {0}, that has DENIED read access", ntAccount.Value);
+                                WriteWarningMessage(String.Format("Current user {0} is in role of {1}", System.Security.Principal.WindowsIdentity.GetCurrent().Name, ntAccount.Value));
+                                WriteWarningMessage(String.Format("That [bold red]has DENIED[/] read access to {0}", DE.Name));
                                 //continue;
                                 //break;
                                 return 0;
@@ -78,22 +127,24 @@ namespace FindCraftedMsDSKeyCredential
             }
             catch (UnauthorizedAccessException)
             {
-                Console.WriteLine("Current user does not have any access to {0}", DE.Path);
+                //WriteErrorMessage(String.Format("Current user does not have any access to {0}", DE.Path));
+                WriteErrorMessage(String.Format("Current user {0} does not have any access to {1}", System.Security.Principal.WindowsIdentity.GetCurrent().Name, DE.Name));
                 return -1;
             }
             catch
             {
-                Console.WriteLine("Unhandled exception while check access to {0}", DE.Path);
+                WriteErrorMessage(String.Format("Unhandled exception while check access to {0}", DE.Name));
+                //Console.WriteLine("Unhandled exception while check access to {0}", DE.Path);
             }
             return -2;
         }
 
-        public static void FindMsDSKeyCredentialWithDeviceID(DirectoryEntry objADAM)
+        public static void FindMsDSKeyCredentialWithDeviceID(DirectoryEntry objADAM, StatusContext ctx)
         {
-            Console.WriteLine("\n[*] Searching msDS-KeyCredentialLink with deviced for: {0}", objADAM.Path);
+            WriteLogMessage(String.Format("Searching msDS-KeyCredentialLink for: {0}", objADAM.Path));
             DirectorySearcher objSearchADAM = new DirectorySearcher(objADAM);
-            objSearchADAM.Filter = "(msDS-KeyCredentialLink=*)"; 
-            objSearchADAM.SearchScope = SearchScope.Subtree;            
+            objSearchADAM.Filter = "(msDS-KeyCredentialLink=*)";
+            objSearchADAM.SearchScope = SearchScope.Subtree;
             //objSearchADAM.Sort.PropertyName = "cn";
             //objSearchADAM.Sort.Direction = SortDirection.Ascending;
             objSearchADAM.CacheResults = false;
@@ -109,6 +160,7 @@ namespace FindCraftedMsDSKeyCredential
             SearchResultCollection objSearchResults = objSearchADAM.FindAll();
 
             int count = 0;
+            ctx.Status($"[bold blue]Objects with msDS-KeyCredentialLink attribute processed: {count}[/]");
 
             var iter = objSearchResults.GetEnumerator();
             using (iter as IDisposable)
@@ -117,14 +169,14 @@ namespace FindCraftedMsDSKeyCredential
                 {
                     while (iter.MoveNext())
                     {
-                        //var user = (MemberUser)iter.Current;
-                        //DirectoryEntry DE = SR.GetDirectoryEntry();
-                        DirectoryEntry DE = ((SearchResult) iter.Current).GetDirectoryEntry(); 
+                        ctx.Spinner(Spinner.Known.Ascii);
+                        ctx.Status($"[bold blue]Objects with msDS-KeyCredentialLink attribute processed: {count}[/]");
+
+                        DirectoryEntry DE = ((SearchResult)iter.Current).GetDirectoryEntry();
                         string sid = String.Empty;
                         sid = new SecurityIdentifier((byte[])DE.Properties["objectSid"][0], 0).ToString();
 
-                        
-                        Console.Write("\x000DUsers with attribute processed: " + count);
+                        DoesIHaveReadAcces(DE);
 
                         if (DE.Properties["msDS-KeyCredentialLink"].Count == 0)
                             Console.WriteLine("[*] No entries!");
@@ -140,7 +192,6 @@ namespace FindCraftedMsDSKeyCredential
                                  * 0x02 - DES-CBC-MD5
                                  * 0x04 - RC4-HMAC
                                  */
-                                //int SupportedEncryptionTypes = (int)DE.Properties["msDS-SupportedEncryptionTypes"][0];
                                 try
                                 {
                                     KeyCredential kc = new KeyCredential(binaryPart, dnString);
@@ -153,33 +204,30 @@ namespace FindCraftedMsDSKeyCredential
                                         !kc.Owner.Contains(DE.Name)
                                         )
                                     {
-                                        Console.WriteLine();
-                                        Console.WriteLine("[*] Listing suspicious deviceID for {0}:", sid);
-                                        Console.WriteLine("Distinguished Name: {0}", DE.Properties["distinguishedName"][0].ToString());                                        
-                                        Console.WriteLine("DeviceID: {0} | Creation Time: {1}", kc.DeviceId, kc.CreationTime);
-                                        Console.WriteLine("Length of key: {0} | Flags: {1}", kc.RawKeyMaterial.Length, kc.CustomKeyInfo.Flags);
-                                        //Console.WriteLine("Alarm");
+                                        AnsiConsole.Write(CreateTable(sid, DE, kc));
                                     }
                                 }
-                                catch (NullReferenceException)
+                                catch (NullReferenceException ex)
                                 {
-                                    Console.WriteLine("\nKey bytes is null for user {0}", DE.Name);
+                                    WriteErrorMessage(String.Format("Key bytes is null for user {0}", DE.Name));
+                                    WriteErrorMessage(String.Format("Message: {0}", ex.Message));
                                 }
-                                catch (Exception)
+                                catch (Exception ex)
                                 {
-                                    Console.WriteLine("Cannot convert key bytes to msDS-KeyCredentialLink structure for user {0}", DE.Name);
+                                    WriteErrorMessage(String.Format("Cannot convert key bytes to msDS-KeyCredentialLink structure for user {0}", DE.Name));
+                                    WriteErrorMessage(String.Format("Message: {0}", ex.Message));
                                 }
                             }
                         }
                         count++;
                     }
                 }
-                catch(DirectoryServicesCOMException ex)
+                catch (DirectoryServicesCOMException ex)
                 {
-                    Console.WriteLine("Some COM error {0}", ex.Data);
-                    Console.WriteLine("Exception code {0}", ex.ErrorCode);
-                    Console.WriteLine("Exception extended code {0}", ex.ExtendedError);
-                    Console.WriteLine("Exception extended message code {0}", ex.ExtendedErrorMessage);
+                    WriteErrorMessage(String.Format("Some COM error {0}", ex.Data));
+                    WriteErrorMessage(String.Format("Exception code {0}", ex.ErrorCode));
+                    WriteErrorMessage(String.Format("Exception extended code {0}", ex.ExtendedError));
+                    WriteErrorMessage(String.Format("Exception extended message code {0}", ex.ExtendedErrorMessage));
                 }
             }
 
@@ -188,13 +236,24 @@ namespace FindCraftedMsDSKeyCredential
         static void Main(string[] args)
         {
 
-            Forest Forest = Forest.GetForest(new DirectoryContext(DirectoryContextType.Forest)) ;
-            DomainCollection AllDomains = Forest.Domains;
+            //AnsiConsole.Write(CreateTable());
 
+            Forest Forest = Forest.GetForest(new DirectoryContext(DirectoryContextType.Forest));
+            DomainCollection AllDomains = Forest.Domains;
             DirectoryEntry entry = AllDomains[0].GetDirectoryEntry();
 
-            foreach (Domain domain in AllDomains)
-                FindMsDSKeyCredentialWithDeviceID(domain.GetDirectoryEntry());
+            AnsiConsole.Record();
+
+            AnsiConsole.Status()
+                .AutoRefresh(true)
+                .Spinner(Spinner.Known.Default)
+                .Start(String.Format("[yellow]Searching for suspicious msDS-KeyCredentialLink for: {0} Forest[/]", Forest.Name), ctx =>
+                {
+                    WriteLogMessage(String.Format("[yellow]Searching for suspicious msDS-KeyCredentialLink for: {0} Forest[/]", Forest.Name));
+                    foreach (Domain domain in AllDomains)
+                        FindMsDSKeyCredentialWithDeviceID(domain.GetDirectoryEntry(), ctx);
+                });
+            File.WriteAllText("output.html", AnsiConsole.ExportHtml());
         }
     }
 }

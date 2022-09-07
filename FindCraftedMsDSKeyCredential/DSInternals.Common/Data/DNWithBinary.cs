@@ -1,7 +1,7 @@
 ﻿namespace DSInternals.Common.Data
 {
-    using System;
     using DSInternals.Common.Properties;
+    using System;
 
     /// <summary>
     /// The DNWithBinary class represents the DN-Binary LDAP attribute syntax, which contains a binary value and a distinguished name (DN).

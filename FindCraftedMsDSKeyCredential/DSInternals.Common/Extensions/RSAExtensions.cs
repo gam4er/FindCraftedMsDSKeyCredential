@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Linq;
-using System.Numerics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
@@ -10,7 +8,7 @@ namespace DSInternals.Common
     {
         private const int BCryptKeyBlobHeaderSize = 6 * sizeof(uint);
         private const uint BCryptRSAPublicKeyMagic = 0x31415352; // "RSA1" in ASCII
-        private const int TPM20KeyBlobHeaderSize = 4 * sizeof(int) + 9 * sizeof(uint);
+        private const int TPM20KeyBlobHeaderSize = (4 * sizeof(int)) + (9 * sizeof(uint));
         private const uint TPM20PublicKeyMagic = 0x4d504350; // "MPCP" in ASCII
         private const byte DERSequenceTag = 0x30;
         private const int DERPublicKeyMinSize = 260; // At least 2K RSA modulus + 3B public exponent + 1B sequence tag
@@ -40,7 +38,7 @@ namespace DSInternals.Common
 
             using (var rsa = (RSACng)certificate.GetRSAPublicKey())
             {
-                using(var key = rsa.Key)
+                using (var key = rsa.Key)
                 {
                     return key.Export(BCryptRSAPublicKeyFormat);
                 }

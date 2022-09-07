@@ -87,12 +87,12 @@
         {
             get
             {
-                if(this.RawKeyMaterial == null)
+                if (this.RawKeyMaterial == null)
                 {
                     return null;
                 }
 
-                if(this.Usage == KeyUsage.NGC || this.Usage == KeyUsage.STK)
+                if (this.Usage == KeyUsage.NGC || this.Usage == KeyUsage.STK)
                 {
                     // The RSA public key can be stored in at least 3 different formats.
 
@@ -101,13 +101,13 @@
                         // This public key is in DER format. This is typically true for device/computer keys.
                         return this.RawKeyMaterial.ImportRSAPublicKeyBCrypt();
                     }
-                    else if(this.RawKeyMaterial.IsTPM20PublicKeyBlob())
+                    else if (this.RawKeyMaterial.IsTPM20PublicKeyBlob())
                     {
                         // This public key is encoded as PCP_KEY_BLOB_WIN8. This is typically true for device keys protected by TPM.
                         // The PCP_KEY_BLOB_WIN8 structure is not yet supported by DSInternals.
                         return null;
                     }
-                    else if(this.RawKeyMaterial.IsDERPublicKeyBlob())
+                    else if (this.RawKeyMaterial.IsDERPublicKeyBlob())
                     {
                         // This public key is encoded as BCRYPT_RSAKEY_BLOB. This is typically true for user keys.
                         return this.RawKeyMaterial.ImportRSAPublicKeyDER();
@@ -214,7 +214,7 @@
             Validator.AssertNotNull(blob, nameof(blob));
             Validator.AssertMinLength(blob, MinLength, nameof(blob));
             Validator.AssertNotNullOrEmpty(owner, nameof(owner));
-            
+
             // Init
             this.Owner = owner;
 
@@ -223,7 +223,7 @@
             {
                 using (var reader = new BinaryReader(stream))
                 {
-                    this.Version = (KeyCredentialVersion) reader.ReadUInt32();
+                    this.Version = (KeyCredentialVersion)reader.ReadUInt32();
 
                     // Read all entries corresponding to the KEYCREDENTIALLINK_ENTRY structure:
                     do
@@ -232,15 +232,15 @@
                         ushort length = reader.ReadUInt16();
 
                         // An 8-bit unsigned integer that specifies the type of data that is stored in the Value field.
-                        KeyCredentialEntryType entryType = (KeyCredentialEntryType) reader.ReadByte();
+                        KeyCredentialEntryType entryType = (KeyCredentialEntryType)reader.ReadByte();
 
                         // A series of bytes whose size and meaning are defined by the Identifier field.
                         byte[] value = reader.ReadBytes(length);
 
-                        if(this.Version == KeyCredentialVersion.Version0)
+                        if (this.Version == KeyCredentialVersion.Version0)
                         {
                             // Data used to be aligned to 4B in this legacy format.
-                            int paddingLength = (PackSize - length % PackSize) % PackSize;
+                            int paddingLength = (PackSize - (length % PackSize)) % PackSize;
                             reader.ReadBytes(paddingLength);
                         }
 
@@ -257,7 +257,7 @@
                                 this.RawKeyMaterial = value;
                                 break;
                             case KeyCredentialEntryType.KeyUsage:
-                                if(length == sizeof(byte))
+                                if (length == sizeof(byte))
                                 {
                                     // This is apparently a V2 structure
                                     this.Usage = (KeyUsage)value[0];
@@ -338,7 +338,7 @@
                     propertyWriter.Write((byte)this.Source);
 
                     // Device ID
-                    if(this.DeviceId.HasValue)
+                    if (this.DeviceId.HasValue)
                     {
                         byte[] binaryGuid = this.DeviceId.Value.ToByteArray();
                         propertyWriter.Write((ushort)binaryGuid.Length);
@@ -347,7 +347,7 @@
                     }
 
                     // Custom Key Information
-                    if(this.CustomKeyInfo != null)
+                    if (this.CustomKeyInfo != null)
                     {
                         byte[] binaryKeyInfo = this.CustomKeyInfo.ToByteArray();
                         propertyWriter.Write((ushort)binaryKeyInfo.Length);
@@ -356,7 +356,7 @@
                     }
 
                     // Last Logon Time
-                    if(this.LastLogonTime.HasValue)
+                    if (this.LastLogonTime.HasValue)
                     {
                         byte[] binaryLastLogonTime = ConvertToBinaryTime(this.LastLogonTime.Value, this.Source, this.Version);
                         propertyWriter.Write((ushort)binaryLastLogonTime.Length);
