@@ -79,10 +79,11 @@ namespace FindCraftedMsDSKeyCredential
 
         private static int DoesIHaveReadAcces(DirectoryEntry DE)
         {
+            string sid = new SecurityIdentifier((byte[])DE.Properties["objectSid"][0], 0).ToString();
             try
             {
                 AuthorizationRuleCollection rules = DE.ObjectSecurity.GetAccessRules(true, true, typeof(System.Security.Principal.NTAccount));
-
+                
                 WindowsIdentity currentUser = WindowsIdentity.GetCurrent();
                 WindowsPrincipal principal = new WindowsPrincipal(currentUser);
                 foreach (ActiveDirectoryAccessRule rule in rules)
@@ -104,8 +105,8 @@ namespace FindCraftedMsDSKeyCredential
                         {
                             if (rule.AccessControlType == AccessControlType.Allow)
                             {
-                                WriteWarningMessage(String.Format("Current user {0} is in role of {1}", System.Security.Principal.WindowsIdentity.GetCurrent().Name, ntAccount.Value));
-                                WriteWarningMessage(String.Format("That [bold green]has ALLOWED[/] read access to {0}", DE.Name));
+                                WriteWarningMessage(String.Format("Current user [bold green]{0}[/] is in role of {1}", System.Security.Principal.WindowsIdentity.GetCurrent().Name, ntAccount.Value));
+                                WriteWarningMessage(String.Format("That [bold green]has ALLOWED[/] read access to [bold green]{0}[/]", sid));
                                 //Console.WriteLine("Current user is in role of {0}, that has read access", ntAccount.Value);
                                 //continue;
                                 //break;
@@ -113,8 +114,8 @@ namespace FindCraftedMsDSKeyCredential
                             }
                             else
                             {
-                                WriteWarningMessage(String.Format("Current user {0} is in role of {1}", System.Security.Principal.WindowsIdentity.GetCurrent().Name, ntAccount.Value));
-                                WriteWarningMessage(String.Format("That [bold red]has DENIED[/] read access to {0}", DE.Name));
+                                WriteWarningMessage(String.Format("Current user [bold red]{0}[/] is in role of {1}", System.Security.Principal.WindowsIdentity.GetCurrent().Name, ntAccount.Value));
+                                WriteWarningMessage(String.Format("That [bold red]has DENIED[/] read access to [bold red]{0}[/]", sid));
                                 //continue;
                                 //break;
                                 return 0;
@@ -128,12 +129,12 @@ namespace FindCraftedMsDSKeyCredential
             catch (UnauthorizedAccessException)
             {
                 //WriteErrorMessage(String.Format("Current user does not have any access to {0}", DE.Path));
-                WriteErrorMessage(String.Format("Current user {0} does not have any access to {1}", System.Security.Principal.WindowsIdentity.GetCurrent().Name, DE.Name));
+                WriteErrorMessage(String.Format("Current user [bold red]{0}[/] does not have any access to [bold red]{1}[/]", System.Security.Principal.WindowsIdentity.GetCurrent().Name, sid));
                 return -1;
             }
             catch
             {
-                WriteErrorMessage(String.Format("Unhandled exception while check access to {0}", DE.Name));
+                WriteErrorMessage(String.Format("Unhandled exception while check access to [bold red]{0}[/]", sid));
                 //Console.WriteLine("Unhandled exception while check access to {0}", DE.Path);
             }
             return -2;
