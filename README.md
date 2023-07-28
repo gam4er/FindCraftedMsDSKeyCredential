@@ -1,3 +1,6 @@
+This is a fork of [Whisker](https://github.com/eladshamir/Whisker) 
+[FindCraftedMsDSKeyCredential](https://github.com/gam4er/FindCraftedMsDSKeyCredential/tree/master/FindCraftedMsDSKeyCredential) used that distro to gain access and parse msDS-KeyCredentialLink attribute 
+
 # Whisker
 
 Whisker is a C# tool for taking over Active Directory user and computer accounts by manipulating their `msDS-KeyCredentialLink` attribute, effectively adding "Shadow Credentials" to the target account.
